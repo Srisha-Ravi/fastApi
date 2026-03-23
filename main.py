@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi.security import OAuth2PasswordRequestForm
-from auth import create_access_token
+from auth import create_access_token, verify_password
 from dependencies import get_current_user
 
 import models, schemas, crud
@@ -82,41 +82,17 @@ def soft_delete(
 
     return student
 
-# @app.post("/login")
-# def login(form_data: OAuth2PasswordRequestForm = Depends()):
-
-#     if form_data.username != "admin" or form_data.password != "admin":
-#         raise HTTPException(status_code=401, detail="Invalid credentials")
-
-#     token = create_access_token({"sub": form_data.username})
-
-#     return {
-#         "access_token": token,
-#         "token_type": "bearer"
-#     }
 
 @app.post("/login")
-def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
-):
-
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     result = crud.get_user_with_role(db, form_data.username)
-
     if not result:
         raise HTTPException(status_code=401, detail="Invalid username")
-
+    
     user, role = result
 
-    if form_data.password != user.password:
+    if not verify_password(form_data.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid password")
 
-    token = create_access_token({
-        "sub": user.username,
-        "role": role.name
-    })
-
-    return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
+    token = create_access_token({"sub": user.username, "role": role.name})
+    return {"access_token": token, "token_type": "bearer"}
