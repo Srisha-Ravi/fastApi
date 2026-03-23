@@ -9,15 +9,18 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str):
-    return pwd_context.hash(password)
-
+    truncated = password[:72]  # only first 72 chars
+    return pwd_context.hash(truncated)
 
 def verify_password(plain_password: str, hashed_password: str):
-    return pwd_context.verify(plain_password, hashed_password)
-
-
+    truncated = plain_password[:72]  # truncate input too
+    return pwd_context.verify(truncated, hashed_password)
+    
 def create_access_token(data: dict):
     to_encode = data.copy()
 
