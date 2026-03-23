@@ -69,19 +69,21 @@ def soft_delete(
 ):
     return crud.soft_delete_student(db, student_id)
 
-
 @app.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     try:
         result = crud.get_user_with_role(db, form_data.username)
         if not result:
             raise HTTPException(status_code=401, detail="Invalid username")
-
+        
         user, role = result
         if user is None or role is None:
             raise HTTPException(status_code=401, detail="Invalid username or role")
 
-        if not verify_password(form_data.password, user.password):
+        # Truncate the password input to 72 chars
+        password_input = form_data.password[:72]
+
+        if not verify_password(password_input, user.password):
             raise HTTPException(status_code=401, detail="Invalid password")
 
         token = create_access_token({"sub": user.username, "role": role.name, "user_id": user.id})
