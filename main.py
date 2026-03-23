@@ -73,24 +73,20 @@ def soft_delete(
 @app.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     try:
-        # Fetch user and role
         result = crud.get_user_with_role(db, form_data.username)
         if not result:
             raise HTTPException(status_code=401, detail="Invalid username")
-        
-        user, role = result
 
+        user, role = result
         if user is None or role is None:
             raise HTTPException(status_code=401, detail="Invalid username or role")
 
-        # Verify password
-        if not verify_password(form_data.password, user.password):  # bcrypt check
+        if not verify_password(form_data.password, user.password):
             raise HTTPException(status_code=401, detail="Invalid password")
 
-        # Create JWT token
         token = create_access_token({"sub": user.username, "role": role.name, "user_id": user.id})
         return {"access_token": token, "token_type": "bearer"}
 
     except Exception as e:
-        print("Login Error:", e)  # This prints the real error in your backend logs
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        print("Login Error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
